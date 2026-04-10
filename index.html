@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Passport Photo Maker</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0f12;
+    --paper: #f5f2ec;
+    --accent: #d4380d;
+    --accent2: #1a6b3c;
+    --mid: #6b6660;
+    --border: #ccc8c0;
+    --white: #ffffff;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--ink);
+    color: var(--white);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  header .logo {
+    width: 38px; height: 38px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  header span {
+    font-size: 0.78rem;
+    color: #aaa;
+    margin-left: 4px;
+    font-weight: 300;
+  }
+
+  .app {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 28px 20px 60px;
+  }
+
+  /* STEPS */
+  .steps {
+    display: flex;
+    gap: 0;
+    margin-bottom: 28px;
+  }
+
+  .step {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    opacity: 0.45;
+    transition: all 0.3s;
+  }
+
+  .step:first-child { border-radius: 10px 0 0 10px; }
+  .step:last-child { border-radius: 0 10px 10px 0; }
+  .step + .step { border-left: none; }
+
+  .step.active {
+    opacity: 1;
+    border-color: var(--accent);
+    background: #fff8f6;
+  }
+
+  .step.done { opacity: 0.7; background: #f0faf4; border-color: var(--accent2); }
+
+  .step-num {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-family: 'Syne', sans-serif;
+    flex-shrink: 0;
+  }
+
+  .step.active .step-num { background: var(--accent); color: #fff; }
+  .step.done .step-num { background: var(--accent2); color: #fff; }
+
+  .step-label { font-size: 0.8rem; font-weight: 500; line-height: 1.2; }
+  .step-label small { display: block; color: var(--mid); font-weight: 300; font-size: 0.7rem; }
+
+  /* PANELS */
+  .panel {
+    background: var(--white);
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    margin-bottom: 20px;
+  }
+
+  .panel-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-title::before {
+    content: '';
+    display: inline-block;
+    width: 4px; height: 18px;
+    background: var(--accent);
+    border-radius: 2px;
+  }
+
+  /* UPLOAD ZONE */
+  .upload-zone {
+    border: 2.5px dashed var(--border);
+    border-radius: 12px;
+    padding: 48px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--accent);
+    background: #fff5f3;
+  }
+
+  .upload-zone input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .upload-icon {
+    font-size: 3rem;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .upload-zone h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .upload-zone p {
+    font-size: 0.82rem;
+    color: var(--mid);
+  }
+
+  .upload-btn {
+    display: inline-block;
+    margin-top: 14px;
+    padding: 9px 22px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    pointer-events: none;
+  }
+
+  /* CROP AREA */
+  .crop-container {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .crop-area {
+    flex: 1;
+    min-width: 280px;
+  }
+
+  .crop-canvas-wrap {
+    position: relative;
+    background: #222;
+    border-radius: 10px;
+    overflow: hidden;
+    touch-action: none;
+    cursor: crosshair;
+  }
+
+  #cropCanvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  /* Crop overlay */
+  .crop-box {
+    position: absolute;
+    border: 2.5px solid #fff;
+    box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+    cursor: move;
+    border-radius: 2px;
+  }
+
+  .crop-box::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    pointer-events: none;
+    border-radius: 1px;
+  }
+
+  /* Crop handles */
+  .handle {
+    position: absolute;
+    width: 10px; height: 10px;
+    background: #fff;
+    border: 1.5px solid #aaa;
+    border-radius: 2px;
+  }
+
+  .h-tl { top: -5px; left: -5px; cursor: nw-resize; }
+  .h-tr { top: -5px; right: -5px; cursor: ne-resize; }
+  .h-bl { bottom: -5px; left: -5px; cursor: sw-resize; }
+  .h-br { bottom: -5px; right: -5px; cursor: se-resize; }
+
+  .crop-preview-col {
+    width: 140px;
+    flex-shrink: 0;
+  }
+
+  .preview-label {
+    font-size: 0.72rem;
+    color: var(--mid);
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  #previewCanvas {
+    width: 113px;
+    height: 151px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    display: block;
+    background: #f0f0f0;
+  }
+
+  .size-note {
+    font-size: 0.7rem;
+    color: var(--mid);
+    margin-top: 6px;
+  }
+
+  /* CROP TOOLS */
+  .crop-tools {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  .tool-btn {
+    padding: 7px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 7px;
+    background: var(--white);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .tool-btn:hover { border-color: var(--ink); background: var(--paper); }
+  .tool-btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .tool-btn.primary:hover { background: #b52e08; }
+
+  /* LAYOUT OPTIONS */
+  .layout-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .layout-opt {
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--paper);
+  }
+
+  .layout-opt:hover { border-color: var(--accent); background: #fff5f3; }
+  .layout-opt.selected { border-color: var(--accent); background: #fff5f3; box-shadow: 0 0 0 2px #f5c4b8; }
+
+  .layout-viz {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+    justify-content: center;
+    margin-bottom: 8px;
+    min-height: 42px;
+    align-items: center;
+  }
+
+  .mini-photo {
+    background: #b0c4d8;
+    border-radius: 1px;
+    flex-shrink: 0;
+  }
+
+  .layout-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  .layout-desc {
+    font-size: 0.68rem;
+    color: var(--mid);
+    margin-top: 2px;
+  }
+
+  /* PRINT PREVIEW */
+  .print-preview-wrap {
+    background: #555;
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .a4-sheet {
+    background: white;
+    width: 100%;
+    max-width: 440px;
+    aspect-ratio: 210/297;
+    position: relative;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  #printGrid {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    gap: 0;
+    padding: 8px;
+  }
+
+  .print-photo-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+  }
+
+  .print-photo-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* ACTIONS */
+  .action-row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+  }
+
+  .big-btn {
+    padding: 13px 28px;
+    border-radius: 10px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+  }
+
+  .big-btn.print {
+    background: var(--ink);
+    color: var(--white);
+    flex: 1;
+  }
+
+  .big-btn.print:hover { background: #2a2a30; transform: translateY(-1px); }
+  .big-btn.print:disabled { background: var(--border); color: var(--mid); cursor: not-allowed; transform: none; }
+
+  .big-btn.reset {
+    background: var(--paper);
+    color: var(--ink);
+    border: 1.5px solid var(--border);
+  }
+
+  .big-btn.reset:hover { border-color: var(--ink); }
+
+  /* ORIENTATION TOGGLE */
+  .orient-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .orient-btn {
+    padding: 8px 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--paper);
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .orient-btn.active {
+    border-color: var(--accent2);
+    background: #f0faf4;
+    color: var(--accent2);
+  }
+
+  /* HIDDEN PRINT CANVAS */
+  #hiddenCanvas { display: none; }
+
+  /* TIPS */
+  .tip {
+    background: #fff8ee;
+    border: 1px solid #f0d89a;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 0.78rem;
+    color: #7a5c00;
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+
+  .tip strong { font-weight: 600; }
+
+  /* HIDDEN */
+  .hidden { display: none !important; }
+
+  /* PRINT STYLES */
+  @media print {
+    body * { visibility: hidden; }
+    #printArea, #printArea * { visibility: visible; }
+    #printArea {
+      position: fixed;
+      top: 0; left: 0;
+      width: 210mm;
+      height: 297mm;
+      background: white;
+    }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--paper); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📷</div>
+  <div>
+    <h1>Passport Photo Maker <span>| A4 Print Ready</span></h1>
+  </div>
+</header>
+
+<div class="app">
+
+  <!-- STEPS INDICATOR -->
+  <div class="steps">
+    <div class="step active" id="step1">
+      <div class="step-num">1</div>
+      <div class="step-label">Photo Upload <small>Koi bhi photo</small></div>
+    </div>
+    <div class="step" id="step2">
+      <div class="step-num">2</div>
+      <div class="step-label">Crop & Adjust <small>35×45mm fit karo</small></div>
+    </div>
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      <div class="step-label">Layout Chuniye <small>Kitni copies chahiye</small></div>
+    </div>
+    <div class="step" id="step4">
+      <div class="step-num">4</div>
+      <div class="step-label">Print Karo <small>A4 paper ready</small></div>
+    </div>
+  </div>
+
+  <!-- STEP 1: UPLOAD -->
+  <div class="panel" id="panelUpload">
+    <div class="panel-title">Photo Select Karo</div>
+    <div class="upload-zone" id="uploadZone">
+      <input type="file" accept="image/*" id="fileInput">
+      <span class="upload-icon">🖼️</span>
+      <h3>Photo yahan drop karo ya click karke select karo</h3>
+      <p>JPG, PNG, HEIC — Mobile camera se bhi direct le sakte hain</p>
+      <span class="upload-btn">📂 Photo Choose Karo</span>
+    </div>
+    <div class="tip">
+      <strong>💡 Tip:</strong> Seedha chehra wali photo lo. Background saaf hona chahiye. Achha result ke liye natural light mein photo lo.
+    </div>
+  </div>
+
+  <!-- STEP 2: CROP -->
+  <div class="panel hidden" id="panelCrop">
+    <div class="panel-title">Photo Crop Karo — Passport Size (35×45mm)</div>
+    <div class="crop-container">
+      <div class="crop-area">
+        <div class="crop-canvas-wrap" id="cropWrap">
+          <canvas id="cropCanvas"></canvas>
+          <div class="crop-box" id="cropBox">
+            <div class="handle h-tl" data-dir="tl"></div>
+            <div class="handle h-tr" data-dir="tr"></div>
+            <div class="handle h-bl" data-dir="bl"></div>
+            <div class="handle h-br" data-dir="br"></div>
+          </div>
+        </div>
+        <div class="crop-tools">
+          <button class="tool-btn" onclick="rotateCrop(-90)">↺ Rotate Left</button>
+          <button class="tool-btn" onclick="rotateCrop(90)">↻ Rotate Right</button>
+          <button class="tool-btn" onclick="flipHorizontal()">↔ Flip</button>
+          <button class="tool-btn primary" onclick="applyCrop()">✓ Crop Confirm</button>
+        </div>
+      </div>
+      <div class="crop-preview-col">
+        <div class="preview-label">Preview</div>
+        <canvas id="previewCanvas" width="113" height="151"></canvas>
+        <div class="size-note">35mm × 45mm<br>Passport Standard</div>
+        <div style="margin-top:12px;">
+          <button class="tool-btn" onclick="resetUpload()" style="font-size:0.72rem;">🔄 Dobara Upload</button>
+        </div>
+      </div>
+    </div>
+    <div class="tip">
+      <strong>💡 Crop Kaise Karo:</strong> Blue box ko drag karke move karo. Corners se resize karo. Chehra box ke centre mein rakho — sir se thodi jagah chhodo upar.
+    </div>
+  </div>
+
+  <!-- STEP 3: LAYOUT -->
+  <div class="panel hidden" id="panelLayout">
+    <div class="panel-title">Layout Chuniye — Kitni Copies?</div>
+
+    <div style="margin-bottom:14px; font-size:0.82rem; color:var(--mid);">A4 sheet par kitni passport size photos print karni hain:</div>
+
+    <div class="layout-grid" id="layoutGrid">
+      <!-- filled by JS -->
+    </div>
+
+    <div class="orient-row">
+      <span style="font-size:0.82rem; font-weight:600; margin-right:4px; align-self:center;">Orientation:</span>
+      <button class="orient-btn active" id="btnPortrait" onclick="setOrientation('portrait')">
+        📄 Portrait (Khada)
+      </button>
+      <button class="orient-btn" id="btnLandscape" onclick="setOrientation('landscape')">
+        📰 Landscape (Lamba)
+      </button>
+    </div>
+
+    <div class="action-row">
+      <button class="big-btn print" onclick="goToPreview()">👁️ Preview Dekho →</button>
+    </div>
+  </div>
+
+  <!-- STEP 4: PREVIEW & PRINT -->
+  <div class="panel hidden" id="panelPrint">
+    <div class="panel-title">Print Preview — A4 Sheet</div>
+
+    <div class="print-preview-wrap">
+      <div class="a4-sheet" id="a4Sheet">
+        <div id="printGrid"></div>
+      </div>
+    </div>
+
+    <div class="tip" style="margin-top:14px;">
+      <strong>🖨️ Print Settings:</strong> Print dialog mein <strong>"Actual Size"</strong> ya <strong>"Scale: 100%"</strong> select karo. Margins = None. Paper = A4.
+    </div>
+
+    <div class="action-row">
+      <button class="big-btn reset" onclick="goBack()">← Wapas Jao</button>
+      <button class="big-btn print" id="printBtn" onclick="doPrint()">🖨️ Print Karo</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Hidden print area -->
+<div id="printArea" style="display:none;"></div>
+<canvas id="hiddenCanvas"></canvas>
+
+<script>
+// ===================== STATE =====================
+let originalImage = null;
+let croppedImageDataURL = null;
+let rotation = 0;
+let flipped = false;
+let selectedLayout = 6;
+let orientation = 'portrait';
+let cropX, cropY, cropW, cropH;
+
+// LAYOUTS: {count, cols, rows, label, desc}
+const LAYOUTS = [
+  { count: 4,  cols: 2, rows: 2, label: '4 Photos',  desc: '2×2 Grid' },
+  { count: 6,  cols: 2, rows: 3, label: '6 Photos',  desc: '2×3 Grid' },
+  { count: 8,  cols: 2, rows: 4, label: '8 Photos',  desc: '2×4 Grid' },
+  { count: 9,  cols: 3, rows: 3, label: '9 Photos',  desc: '3×3 Grid' },
+  { count: 12, cols: 3, rows: 4, label: '12 Photos', desc: '3×4 Grid' },
+  { count: 16, cols: 4, rows: 4, label: '16 Photos', desc: '4×4 Grid' },
+  { count: 18, cols: 3, rows: 6, label: '18 Photos', desc: '3×6 Grid' },
+];
+
+// ===================== UPLOAD =====================
+const fileInput = document.getElementById('fileInput');
+const uploadZone = document.getElementById('uploadZone');
+
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+});
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+
+function loadFile(file) {
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      originalImage = img;
+      rotation = 0; flipped = false;
+      initCrop();
+      showStep(2);
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ===================== CROP =====================
+const cropCanvas = document.getElementById('cropCanvas');
+const cropCtx = cropCanvas.getContext('2d');
+const previewCanvas = document.getElementById('previewCanvas');
+const previewCtx = previewCanvas.getContext('2d');
+const cropBox = document.getElementById('cropBox');
+const cropWrap = document.getElementById('cropWrap');
+
+let canvasW, canvasH, imgScale;
+let isDragging = false, isResizing = false;
+let dragStartX, dragStartY, dragStartCropX, dragStartCropY;
+let resizeDir = '';
+
+function initCrop() {
+  // Max canvas size 500px wide
+  const maxW = Math.min(500, cropWrap.clientWidth || 500);
+  imgScale = maxW / originalImage.width;
+  if (originalImage.height * imgScale > 550) {
+    imgScale = 550 / originalImage.height;
+  }
+
+  canvasW = Math.round(originalImage.width * imgScale);
+  canvasH = Math.round(originalImage.height * imgScale);
+
+  cropCanvas.width = canvasW;
+  cropCanvas.height = canvasH;
+  cropWrap.style.height = canvasH + 'px';
+
+  // Initial crop box: 35:45 ratio, centered, ~60% height
+  const ratio = 35 / 45;
+  cropH = canvasH * 0.7;
+  cropW = cropH * ratio;
+  cropX = (canvasW - cropW) / 2;
+  cropY = (canvasH - cropH) / 2;
+
+  drawCropCanvas();
+  updateCropBox();
+  updatePreview();
+}
+
+function drawCropCanvas() {
+  cropCtx.clearRect(0, 0, canvasW, canvasH);
+  cropCtx.save();
+  cropCtx.translate(canvasW / 2, canvasH / 2);
+  if (flipped) cropCtx.scale(-1, 1);
+  cropCtx.rotate(rotation * Math.PI / 180);
+  cropCtx.drawImage(originalImage, -canvasW / 2, -canvasH / 2, canvasW, canvasH);
+  cropCtx.restore();
+}
+
+function updateCropBox() {
+  cropBox.style.left = cropX + 'px';
+  cropBox.style.top = cropY + 'px';
+  cropBox.style.width = cropW + 'px';
+  cropBox.style.height = cropH + 'px';
+}
+
+function updatePreview() {
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = canvasW;
+  offCanvas.height = canvasH;
+  const ctx = offCanvas.getContext('2d');
+  ctx.save();
+  ctx.translate(canvasW / 2, canvasH / 2);
+  if (flipped) ctx.scale(-1, 1);
+  ctx.rotate(rotation * Math.PI / 180);
+  ctx.drawImage(originalImage, -canvasW / 2, -canvasH / 2, canvasW, canvasH);
+  ctx.restore();
+
+  previewCtx.clearRect(0, 0, 113, 151);
+  previewCtx.drawImage(offCanvas,
+    cropX, cropY, cropW, cropH,
+    0, 0, 113, 151
+  );
+}
+
+// Dragging crop box
+cropBox.addEventListener('mousedown', e => {
+  if (e.target.classList.contains('handle')) return;
+  isDragging = true;
+  dragStartX = e.clientX; dragStartY = e.clientY;
+  dragStartCropX = cropX; dragStartCropY = cropY;
+  e.preventDefault();
+});
+
+cropBox.addEventListener('touchstart', e => {
+  if (e.target.classList.contains('handle')) return;
+  isDragging = true;
+  const t = e.touches[0];
+  dragStartX = t.clientX; dragStartY = t.clientY;
+  dragStartCropX = cropX; dragStartCropY = cropY;
+  e.preventDefault();
+}, { passive: false });
+
+document.querySelectorAll('.handle').forEach(h => {
+  h.addEventListener('mousedown', e => {
+    isResizing = true;
+    resizeDir = h.dataset.dir;
+    dragStartX = e.clientX; dragStartY = e.clientY;
+    dragStartCropX = cropX; dragStartCropY = cropY;
+    e.preventDefault();
+    e.stopPropagation();
+  });
+  h.addEventListener('touchstart', e => {
+    isResizing = true;
+    resizeDir = h.dataset.dir;
+    const t = e.touches[0];
+    dragStartX = t.clientX; dragStartY = t.clientY;
+    dragStartCropX = cropX; dragStartCropY = cropY;
+    e.preventDefault();
+    e.stopPropagation();
+  }, { passive: false });
+});
+
+function handleMove(clientX, clientY) {
+  const dx = clientX - dragStartX;
+  const dy = clientY - dragStartY;
+  const ratio = 35 / 45;
+
+  if (isDragging) {
+    cropX = Math.max(0, Math.min(canvasW - cropW, dragStartCropX + dx));
+    cropY = Math.max(0, Math.min(canvasH - cropH, dragStartCropY + dy));
+    updateCropBox();
+    updatePreview();
+  }
+
+  if (isResizing) {
+    let newW = cropW, newH = cropH, newX = cropX, newY = cropY;
+    const minSize = 40;
+
+    if (resizeDir.includes('r')) {
+      newW = Math.max(minSize, dragStartCropX + cropW - dragStartCropX + dx);
+    }
+    if (resizeDir.includes('b')) {
+      newH = newW / ratio;
+    }
+    if (resizeDir.includes('l')) {
+      const delta = dx;
+      newW = Math.max(minSize, cropW - delta);
+      newX = dragStartCropX + (cropW - newW);
+    }
+    if (resizeDir.includes('t')) {
+      newH = newW / ratio;
+      newY = dragStartCropY + (cropH - newH);
+    }
+
+    // Maintain aspect ratio
+    newH = newW / ratio;
+    if (resizeDir.includes('t')) newY = dragStartCropY + (cropH - newH);
+    if (resizeDir.includes('l')) newX = dragStartCropX + (cropW - newW);
+
+    // Clamp
+    newX = Math.max(0, newX);
+    newY = Math.max(0, newY);
+    if (newX + newW > canvasW) newW = canvasW - newX;
+    if (newY + newH > canvasH) newH = canvasH - newY;
+
+    cropX = newX; cropY = newY; cropW = newW; cropH = newH;
+    updateCropBox();
+    updatePreview();
+  }
+}
+
+document.addEventListener('mousemove', e => handleMove(e.clientX, e.clientY));
+document.addEventListener('touchmove', e => { const t = e.touches[0]; handleMove(t.clientX, t.clientY); }, { passive: false });
+document.addEventListener('mouseup', () => { isDragging = false; isResizing = false; });
+document.addEventListener('touchend', () => { isDragging = false; isResizing = false; });
+
+function rotateCrop(deg) {
+  rotation = (rotation + deg + 360) % 360;
+  drawCropCanvas();
+  updatePreview();
+}
+
+function flipHorizontal() {
+  flipped = !flipped;
+  drawCropCanvas();
+  updatePreview();
+}
+
+function applyCrop() {
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = canvasW;
+  offCanvas.height = canvasH;
+  const ctx = offCanvas.getContext('2d');
+  ctx.save();
+  ctx.translate(canvasW / 2, canvasH / 2);
+  if (flipped) ctx.scale(-1, 1);
+  ctx.rotate(rotation * Math.PI / 180);
+  ctx.drawImage(originalImage, -canvasW / 2, -canvasH / 2, canvasW, canvasH);
+  ctx.restore();
+
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = 350; // 35mm @100dpi
+  finalCanvas.height = 450; // 45mm @100dpi
+  const fCtx = finalCanvas.getContext('2d');
+  fCtx.drawImage(offCanvas, cropX, cropY, cropW, cropH, 0, 0, 350, 450);
+
+  croppedImageDataURL = finalCanvas.toDataURL('image/jpeg', 0.95);
+  buildLayoutOptions();
+  showStep(3);
+}
+
+// ===================== LAYOUT =====================
+function buildLayoutOptions() {
+  const grid = document.getElementById('layoutGrid');
+  grid.innerHTML = '';
+  LAYOUTS.forEach(l => {
+    const div = document.createElement('div');
+    div.className = 'layout-opt' + (l.count === selectedLayout ? ' selected' : '');
+    div.onclick = () => selectLayout(l.count);
+
+    const viz = document.createElement('div');
+    viz.className = 'layout-viz';
+
+    const photoW = Math.min(22, Math.floor(80 / l.cols) - 2);
+    const photoH = Math.round(photoW * 45 / 35);
+
+    for (let i = 0; i < l.count; i++) {
+      const p = document.createElement('div');
+      p.className = 'mini-photo';
+      p.style.width = photoW + 'px';
+      p.style.height = photoH + 'px';
+
+      if (croppedImageDataURL) {
+        const img = document.createElement('img');
+        img.src = croppedImageDataURL;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.style.display = 'block';
+        img.style.borderRadius = '1px';
+        p.style.overflow = 'hidden';
+        p.style.padding = '0';
+        p.appendChild(img);
+      }
+
+      viz.appendChild(p);
+    }
+
+    div.innerHTML = `<div class="layout-name">${l.label}</div><div class="layout-desc">${l.desc}</div>`;
+    div.insertBefore(viz, div.firstChild);
+    grid.appendChild(div);
+  });
+}
+
+function selectLayout(count) {
+  selectedLayout = count;
+  document.querySelectorAll('.layout-opt').forEach((el, i) => {
+    el.classList.toggle('selected', LAYOUTS[i].count === count);
+  });
+}
+
+function setOrientation(o) {
+  orientation = o;
+  document.getElementById('btnPortrait').classList.toggle('active', o === 'portrait');
+  document.getElementById('btnLandscape').classList.toggle('active', o === 'landscape');
+}
+
+// ===================== PRINT PREVIEW =====================
+function goToPreview() {
+  buildPrintGrid();
+  showStep(4);
+}
+
+function buildPrintGrid() {
+  const layout = LAYOUTS.find(l => l.count === selectedLayout) || LAYOUTS[1];
+  const grid = document.getElementById('printGrid');
+  const sheet = document.getElementById('a4Sheet');
+
+  // Set A4 aspect ratio based on orientation
+  if (orientation === 'landscape') {
+    sheet.style.aspectRatio = '297/210';
+  } else {
+    sheet.style.aspectRatio = '210/297';
+  }
+
+  grid.style.gridTemplateColumns = `repeat(${layout.cols}, 1fr)`;
+  grid.style.gridTemplateRows = `repeat(${layout.rows}, 1fr)`;
+
+  grid.innerHTML = '';
+  for (let i = 0; i < layout.count; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'print-photo-cell';
+    const img = document.createElement('img');
+    img.src = croppedImageDataURL;
+    cell.appendChild(img);
+    grid.appendChild(cell);
+  }
+}
+
+// ===================== ACTUAL PRINT =====================
+function doPrint() {
+  const layout = LAYOUTS.find(l => l.count === selectedLayout) || LAYOUTS[1];
+
+  // A4 at 96dpi: 794 x 1123px (portrait)
+  let pw, ph;
+  if (orientation === 'portrait') { pw = 794; ph = 1123; }
+  else { pw = 1123; ph = 794; }
+
+  const margin = 20;
+  const gap = 6;
+
+  const cols = layout.cols;
+  const rows = layout.rows;
+  const availW = pw - 2 * margin - (cols - 1) * gap;
+  const availH = ph - 2 * margin - (rows - 1) * gap;
+
+  const cellW = Math.floor(availW / cols);
+  const cellH = Math.floor(availH / rows);
+
+  // Maintain 35:45 ratio
+  const ratio = 35 / 45;
+  let photoW = cellW;
+  let photoH = photoW / ratio;
+  if (photoH > cellH) {
+    photoH = cellH;
+    photoW = photoH * ratio;
+  }
+  photoW = Math.floor(photoW);
+  photoH = Math.floor(photoH);
+
+  const totalW = cols * photoW + (cols - 1) * gap;
+  const totalH = rows * photoH + (rows - 1) * gap;
+  const startX = Math.floor((pw - totalW) / 2);
+  const startY = Math.floor((ph - totalH) / 2);
+
+  const printCanvas = document.createElement('canvas');
+  printCanvas.width = pw;
+  printCanvas.height = ph;
+  const ctx = printCanvas.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, pw, ph);
+
+  const img = new Image();
+  img.onload = () => {
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = startX + c * (photoW + gap);
+        const y = startY + r * (photoH + gap);
+        ctx.drawImage(img, x, y, photoW, photoH);
+
+        // Thin border
+        ctx.strokeStyle = '#dddddd';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(x, y, photoW, photoH);
+      }
+    }
+
+    const dataURL = printCanvas.toDataURL('image/jpeg', 0.98);
+
+    // Open print window
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Passport Photos - Print</title>
+        <style>
+          * { margin:0; padding:0; box-sizing:border-box; }
+          body { background:#fff; }
+          img { display:block; width:100%; height:auto; max-width:100%; }
+          @page {
+            size: A4 ${orientation};
+            margin: 0;
+          }
+          @media print {
+            body { margin: 0; }
+            img { width: 210mm; height: auto; }
+          }
+        </style>
+      </head>
+      <body>
+        <img src="${dataURL}" alt="Passport Photos">
+        <script>
+          window.onload = function() {
+            setTimeout(function() { window.print(); }, 400);
+          };
+        <\/script>
+      </body>
+      </html>
+    `);
+    win.document.close();
+  };
+
+  img.src = croppedImageDataURL;
+}
+
+// ===================== NAVIGATION =====================
+function showStep(n) {
+  document.getElementById('panelUpload').classList.toggle('hidden', n !== 1);
+  document.getElementById('panelCrop').classList.toggle('hidden', n !== 2);
+  document.getElementById('panelLayout').classList.toggle('hidden', n !== 3);
+  document.getElementById('panelPrint').classList.toggle('hidden', n !== 4);
+
+  for (let i = 1; i <= 4; i++) {
+    const s = document.getElementById('step' + i);
+    s.classList.remove('active', 'done');
+    if (i === n) s.classList.add('active');
+    else if (i < n) s.classList.add('done');
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goBack() {
+  if (!document.getElementById('panelPrint').classList.contains('hidden')) showStep(3);
+  else if (!document.getElementById('panelLayout').classList.contains('hidden')) showStep(2);
+  else if (!document.getElementById('panelCrop').classList.contains('hidden')) showStep(1);
+}
+
+function resetUpload() {
+  croppedImageDataURL = null;
+  originalImage = null;
+  fileInput.value = '';
+  showStep(1);
+}
+
+// Init layout options grid on load
+document.addEventListener('DOMContentLoaded', () => {
+  buildLayoutOptions();
+});
+</script>
+</body>
+</html>
